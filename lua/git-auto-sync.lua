@@ -1,8 +1,3 @@
-local job = require("plenary.job")
-local on_err = function(dir, file, err)
-	error("git-auto-sync error. Dir: " .. dir .. ", file: " .. file .. ", error: " .. err)
-end
-
 local defaults = {
 	auto_pull = false,
 	auto_push = false,
@@ -11,7 +6,7 @@ local defaults = {
 }
 
 local add_defaults = function(t)
-	for i, v in ipairs(t) do
+	for _, v in ipairs(t) do
 		v[1] = vim.fn.expand(v[1])
 		for default, default_value in pairs(defaults) do
 			if v[default] == nil then
@@ -38,50 +33,84 @@ M.setup = function(config)
 	add_defaults(config)
 	M._config = config
 
-	for i, v in ipairs(M._config) do
+	for _, v in ipairs(M._config) do
 		M.create_auto_command(v)
 	end
 end
 
-M._on_event = function(dir, file, events)
-	vim.print(dir)
-	vim.print(file)
-	vim.print(events)
-end
 M.auto_commit = function(dir, filename)
 	local Job = require("plenary.job")
-	Job:new({
+	return Job:new({
 		command = "git",
 		args = { "commit", "-m", "'auto commit " .. filename .. "'" },
-		on_stdout = function(out)
-			vim.print(out)
+		on_stdout = function(err, data, j)
+			vim.print(data)
+		end,
+		on_stderr = function(err, data, j)
+			error(data)
 		end,
 		cwd = dir,
-	}):start()
+	})
 end
 M.auto_add = function(dir, filename)
 	local Job = require("plenary.job")
-
-	Job:new({
+	return Job:new({
 		command = "git",
 		args = { "add", filename },
 		cwd = dir,
+		on_start = function()
+			vim.print("starting add job")
+		end,
+		on_stderr = function(err, data, j)
+			error(data)
+		end,
+		on_stdout = function(err, data, j)
+			vim.print(data)
+		end,
+	})
+end
+M.auto_push = function(dir)
+	local job = require("plenary.job")
+
+	return job:new({
+		command = "git",
+		args = { "push", "origin" },
+		cwd = dir,
+		on_stderr = function(err, data, j)
+			error(data)
+		end,
+		on_stdout = function(err, data, j)
+			print(data)
+		end,
 		on_exit = function(j, return_val)
-			if return_val == 0 then
-				M.auto_commit(dir, filename)
+			if return_val ~= 0 then
+				vim.print("Exited with code " .. return_val)
 			end
 		end,
-	}):start()
+	})
 end
 
-M.auto_push = function(dir) end
+M.handle_file_save = function(dir, filename)
+	if M._config.auto_commit then
+		local jobs = {
+			M.auto_add(dir,filename),
+			M.auto_commit(dir, filename),
+		}
+		if M._config.auto_push then
+			table.insert(jobs, M.auto_push(dir))
+		end
+		local job = require 'plenary.job'
+		vim.print(job.chain)
+		job.chain(jobs)
+	end
+end
 
 M.create_auto_command = function(opts)
 	local git_group = vim.api.nvim_create_augroup("AutoSync_" .. opts[1], { clear = true })
 	vim.api.nvim_create_autocmd({ "BufWritePost" }, {
 		pattern = opts[1] .. "/*",
 		callback = function()
-			M.auto_add(opts[1], vim.fn.bufname("%"))
+			M.handle_file_save(opts[1], vim.fn.bufname("%"))
 		end,
 		group = git_group,
 	})
