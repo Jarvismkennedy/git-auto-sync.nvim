@@ -7,7 +7,6 @@ dev.reload = function()
 			"~/Documents/notes/plugin_dev",
 			auto_pull = true,
 			auto_commit = true,
-			prompt = false,
 			auto_push = true,
 		},
 	})

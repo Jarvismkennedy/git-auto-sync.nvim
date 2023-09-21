@@ -31,9 +31,9 @@ M._config = {}
 
 M.setup = function(config)
 	add_defaults(config)
-	M._config = config
-
-	for _, v in ipairs(M._config) do
+	M._config = {}
+	for _, v in ipairs(config) do
+		M._config[v[1]] = v
 		M.create_auto_command(v)
 	end
 end
@@ -91,17 +91,21 @@ M.auto_push = function(dir)
 end
 
 M.handle_file_save = function(dir, filename)
-	if M._config.auto_commit then
+	local conf = M._config[dir]
+	if conf.auto_commit then
 		local jobs = {
-			M.auto_add(dir,filename),
+			M.auto_add(dir, filename),
 			M.auto_commit(dir, filename),
 		}
-		if M._config.auto_push then
+		if conf.auto_push then
 			table.insert(jobs, M.auto_push(dir))
 		end
-		local job = require 'plenary.job'
-		vim.print(job.chain)
-		job.chain(jobs)
+		local job = require("plenary.job")
+		local up = unpack
+		if table.unpack then
+			up = table.unpack
+		end
+		job.chain(up(jobs))
 	end
 end
 
