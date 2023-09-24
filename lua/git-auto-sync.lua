@@ -36,6 +36,9 @@ M.setup = function(config)
 		M._config[v[1]] = v
 		table.insert(dirs, v[1])
 		M.create_auto_command(v)
+		if v.auto_pull then
+			M.auto_pull(v[1]):start()
+		end
 	end
 	M._config.dirs = dirs
 end
@@ -51,31 +54,29 @@ M.auto_sync = function()
 	end)
 end
 M.auto_pull = function(dir)
-	require("plenary.job")
-		:new({
-			command = "git",
-			args = { "pull", "--rebase" },
-			on_stdout = function(err, data, j)
-				vim.print(data)
-			end,
-			on_stderr = function(err, data, j)
-				error(data)
-			end,
-			cwd = dir,
-		})
-		:start()
+	return require("plenary.job"):new({
+		command = "git",
+		args = { "pull", "--rebase", "-q" },
+		on_stdout = function(err, data, j)
+			vim.print(data)
+		end,
+		on_stderr = function(err, data, j)
+			error(data)
+		end,
+		cwd = dir,
+	})
 end
 M.auto_commit = function(dir, filename)
 	local Job = require("plenary.job")
-	local msg = ''
-	if M._config[dir].commit_prompt then
+	local msg = ""
+	if M._config[dir].prompt then
 		msg = vim.fn.input("Commit Message\n")
-		else
-		msg = 'git-auto-commit: '..filename
+	else
+		msg = "git-auto-commit: " .. filename
 	end
 	return Job:new({
 		command = "git",
-		args = { "commit", "-m", msg },
+		args = { "commit", "-m", msg, "-q" },
 		on_stdout = function(err, data, j)
 			vim.print(data)
 		end,
@@ -91,9 +92,6 @@ M.auto_add = function(dir, filename)
 		command = "git",
 		args = { "add", filename },
 		cwd = dir,
-		on_start = function()
-			vim.print("starting add job")
-		end,
 		on_stderr = function(err, data, j)
 			error(data)
 		end,
@@ -108,13 +106,13 @@ M.auto_push = function(dir)
 
 	return job:new({
 		command = "git",
-		args = { "push", "origin" },
+		args = { "push", "origin", "-q" },
 		cwd = dir,
 		on_stderr = function(err, data, j)
 			error(data)
 		end,
 		on_stdout = function(err, data, j)
-			print(data)
+			vim.print(data)
 		end,
 		on_exit = function(j, return_val)
 			if return_val ~= 0 then
