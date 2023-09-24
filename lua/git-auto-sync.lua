@@ -2,7 +2,7 @@ local defaults = {
 	auto_pull = false,
 	auto_push = false,
 	auto_commit = true,
-	commit_prompt = true,
+	prompt = true,
 }
 
 local add_defaults = function(t)
@@ -19,12 +19,11 @@ local M = {}
 
 --@doc config is a list of directories,
 -- {
--- 	dir = '~/notes',
+-- 	'~/notes',
 -- 	auto_pull = false,
 -- 	auto_push = false,
 -- 	auto_commit = true,
--- 	commit_prompt = true,
--- 	branches? = { list of branches to apply it on }
+-- 	prompt = true,
 -- }
 
 M._config = {}
@@ -32,12 +31,40 @@ M._config = {}
 M.setup = function(config)
 	add_defaults(config)
 	M._config = {}
+	local dirs = {}
 	for _, v in ipairs(config) do
 		M._config[v[1]] = v
+		table.insert(dirs, v[1])
 		M.create_auto_command(v)
 	end
+	M._config.dirs = dirs
 end
 
+M.auto_sync = function()
+	vim.ui.select(M._config.dirs, { prompt = "auto sync dir: " }, function(dir)
+		local jobs = { M.auto_add(dir, "."), M.auto_commit(dir, "git_sync"), M.auto_pull(dir), M.auto_push(dir) }
+		local up = unpack
+		if table.unpack then
+			up = table.unpack
+		end
+		require("plenary.job").chain(up(jobs))
+	end)
+end
+M.auto_pull = function(dir)
+	require("plenary.job")
+		:new({
+			command = "git",
+			args = { "pull", "--rebase" },
+			on_stdout = function(err, data, j)
+				vim.print(data)
+			end,
+			on_stderr = function(err, data, j)
+				error(data)
+			end,
+			cwd = dir,
+		})
+		:start()
+end
 M.auto_commit = function(dir, filename)
 	local Job = require("plenary.job")
 	local msg = ''
@@ -75,6 +102,7 @@ M.auto_add = function(dir, filename)
 		end,
 	})
 end
+
 M.auto_push = function(dir)
 	local job = require("plenary.job")
 
