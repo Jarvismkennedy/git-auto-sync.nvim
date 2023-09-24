@@ -40,9 +40,15 @@ end
 
 M.auto_commit = function(dir, filename)
 	local Job = require("plenary.job")
+	local msg = ''
+	if M._config[dir].commit_prompt then
+		msg = vim.fn.input("Commit Message\n")
+		else
+		msg = 'git-auto-commit: '..filename
+	end
 	return Job:new({
 		command = "git",
-		args = { "commit", "-m", "'auto commit " .. filename .. "'" },
+		args = { "commit", "-m", msg },
 		on_stdout = function(err, data, j)
 			vim.print(data)
 		end,
