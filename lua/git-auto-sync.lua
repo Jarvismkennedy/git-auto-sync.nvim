@@ -146,7 +146,7 @@ M.create_auto_command = function(opts)
 	vim.api.nvim_create_autocmd({ "BufWritePost" }, {
 		pattern = opts[1] .. "/*",
 		callback = function()
-			M.handle_file_save(opts[1], vim.fn.bufname("%"))
+			M.handle_file_save(opts[1], vim.fn.bufname(0))
 		end,
 		group = git_group,
 	})
