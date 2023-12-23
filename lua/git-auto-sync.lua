@@ -183,6 +183,9 @@ end
 
 vim.api.nvim_create_user_command('GitAutoSync', function(args)
     local arg = args.args
+	if arg == nil or arg == "" then
+		M.auto_sync()
+	end
     if arg == 'pause' then
         M.pause()
         vim.api.nvim_notify('[git-auto-sync] paused', vim.log.levels.INFO, {})
@@ -196,6 +199,6 @@ vim.api.nvim_create_user_command('GitAutoSync', function(args)
             M.auto_sync_dir(k)
         end
     end
-end, { nargs = 1 })
+end, { nargs = "?" })
 
 return M
