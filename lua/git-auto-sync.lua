@@ -15,6 +15,7 @@ local add_defaults = function(t)
         end
     end
 end
+
 local M = {}
 
 --@doc config is a list of directories,
@@ -178,5 +179,13 @@ M.create_auto_command = function(opts)
         group = git_group,
     })
 end
+
+
+vim.api.nvim_create_user_command("GitAutoSync", function(args)
+	local arg = args.args
+	if arg == "pause" then
+		vim.api.nvim_notify("paused",vim.log.levels.INFO,{})
+	end
+end, {nargs = 1});
 
 return M
