@@ -15,6 +15,7 @@ local add_defaults = function(t)
         end
     end
 end
+
 local M = {}
 
 --@doc config is a list of directories,
@@ -24,6 +25,7 @@ local M = {}
 -- 	auto_push = false,
 -- 	auto_commit = true,
 -- 	prompt = true,
+-- 	name = "notes"
 -- }
 
 M._paused = false
@@ -178,5 +180,25 @@ M.create_auto_command = function(opts)
         group = git_group,
     })
 end
+
+vim.api.nvim_create_user_command('GitAutoSync', function(args)
+    local arg = args.args
+	if arg == nil or arg == "" then
+		M.auto_sync()
+	end
+    if arg == 'pause' then
+        M.pause()
+        vim.api.nvim_notify('[git-auto-sync] paused', vim.log.levels.INFO, {})
+    end
+    if arg == 'resume' then
+        M.resume()
+        vim.api.nvim_notify('[git-auto-sync] resumed', vim.log.levels.INFO, {})
+    end
+    for k, v in pairs(M._config) do
+        if v.name == arg then
+            M.auto_sync_dir(k)
+        end
+    end
+end, { nargs = "?" })
 
 return M
