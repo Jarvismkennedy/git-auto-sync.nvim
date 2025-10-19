@@ -1,12 +1,8 @@
 # Git Auto Sync
 
-I wanted a way to automatically sync my [Neorg](https://github.com/nvim-neorg/neorg) notes between
+I wanted a way to automatically sync my [todo](https://github.com/Jarvismkennedy/todo.nvim) notes between
 my desktop and my laptop, so I made this plugin. You can report bugs and I will try to fix them,
 or just copy the code. It is pretty simple.
-
-# Install
-
-Install using your favourite package manager.
 
 ## Lazy
 
